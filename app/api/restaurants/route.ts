@@ -29,7 +29,7 @@ async function searchKakao(lat: number, lng: number, radius: number, page: numbe
     {
       headers: {
         Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
-        KA: "sdk/1.0.0 os/javascript origin/http://localhost:3000",
+        KA: `sdk/1.0.0 os/javascript origin/${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"}`,
       },
     }
   );
