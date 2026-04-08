@@ -46,6 +46,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "위치 정보가 필요합니다." }, { status: 400 });
   }
 
+  const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
+  const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
+
   // 500m 반경, 3페이지(최대 45개) 가져오기
   const [p1, p2, p3] = await Promise.all([
     searchKakao(lat, lng, 500, 1),
@@ -70,7 +73,9 @@ export async function GET(req: NextRequest) {
   const categories = ["한식", "일식·중식", "양식·기타"] as const;
   const restaurants = categories
     .map((cat) => {
-      const pool = buckets[cat];
+      // 이전에 나온 가게 제외
+      const fresh = buckets[cat].filter((p) => !excluded.has(p.place_name));
+      const pool = fresh.length > 0 ? fresh : buckets[cat];
       if (pool.length === 0) return null;
       const pick = pool[Math.floor(Math.random() * pool.length)];
       return {

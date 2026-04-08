@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { MapPin, RotateCcw, Shuffle, ChevronRight, Soup, Fish, Sandwich } from "lucide-react";
 import type { Restaurant } from "@/components/NaverMap";
@@ -21,6 +21,8 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | undefined>();
   const [totalNearby, setTotalNearby] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+  const seenRef = useRef<Set<string>>(new Set());
+  const clickCountRef = useRef(0);
 
   async function recommend() {
     setPhase("locating");
@@ -40,12 +42,25 @@ export default function Home() {
         const lng = pos.coords.longitude;
         setUserLocation({ lat, lng });
         setPhase("fetching");
+
+        // 3번 넘으면 중복 방지 캐시 초기화
+        clickCountRef.current += 1;
+        if (clickCountRef.current > 3) {
+          seenRef.current.clear();
+          clickCountRef.current = 1;
+        }
+
         try {
-          const res = await fetch(`/api/restaurants?lat=${lat}&lng=${lng}`);
+          const excludeParam = seenRef.current.size > 0
+            ? `&exclude=${encodeURIComponent([...seenRef.current].join(","))}`
+            : "";
+          const res = await fetch(`/api/restaurants?lat=${lat}&lng=${lng}${excludeParam}`);
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "서버 오류");
-          setRestaurants(data.restaurants ?? []);
+          const newList: Restaurant[] = data.restaurants ?? [];
+          setRestaurants(newList);
           setTotalNearby(data.totalNearby ?? 0);
+          newList.forEach((r) => seenRef.current.add(r.title));
           setPhase("done");
         } catch (e: unknown) {
           setErrorMsg(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -130,7 +145,7 @@ export default function Home() {
                 const cat = CATEGORIES[i] ?? CATEGORIES[0];
                 const Icon = cat.icon;
                 const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
-                const href = r.link || `https://map.naver.com/p/search/${encodeURIComponent(r.title)}`;
+                const href = r.link || `https://place.map.kakao.com/`;
 
                 return (
                   <a key={i} href={href} target="_blank" rel="noopener noreferrer"

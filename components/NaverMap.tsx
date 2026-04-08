@@ -143,7 +143,7 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
             <strong style="font-size:13px;color:#111;">${r.title}</strong>
             ${r.category ? `<p style="margin:4px 0 0;font-size:11px;color:${color};font-weight:600;">${r.category}</p>` : ""}
             <p style="margin:6px 0 0;font-size:11px;color:#666;">${r.roadAddress || r.address}</p>
-            <a href="${r.link || `https://map.naver.com/p/search/${encodeURIComponent(r.title)}`}" target="_blank" style="display:inline-block;margin-top:8px;font-size:11px;color:#03C75A;font-weight:600;text-decoration:none;">네이버 플레이스 보기 →</a>
+            <a href="${r.link || `https://place.map.kakao.com/`}" target="_blank" style="display:inline-block;margin-top:8px;font-size:11px;color:#FFCD00;background:#111;padding:3px 8px;border-radius:4px;font-weight:600;text-decoration:none;">카카오맵 보기 →</a>
           </div>`,
         maxWidth: 280,
         borderRadius: "12px",
@@ -167,7 +167,10 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
         new naver.maps.LatLng(userLocationRef.current.lat, userLocationRef.current.lng)
       );
       validRestaurants.forEach((r) => bounds.extend(new naver.maps.LatLng(r.lat, r.lng)));
-      map.fitBounds(bounds, { padding: 60 });
+      map.fitBounds(bounds, { top: 80, right: 80, bottom: 80, left: 80 });
+      // fitBounds 후 너무 확대됐으면 줌 제한
+      const z = map.getZoom();
+      if (z > 16) map.setZoom(16);
     }
   }
 
