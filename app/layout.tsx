@@ -48,9 +48,7 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true },
   },
   verification: {
-    // 구글/네이버 서치콘솔 등록 후 여기에 코드 입력
-    // google: "YOUR_GOOGLE_VERIFICATION",
-    // other: { "naver-site-verification": "YOUR_NAVER_VERIFICATION" },
+    google: "NSwJ4069-ctjVKHyqmRDUXxfeI4syxCr0KNbJukNDYg",
   },
 };
 
