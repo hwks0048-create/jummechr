@@ -129,7 +129,7 @@ export default function Home() {
               {restaurants.map((r, i) => {
                 const cat = CATEGORIES[i] ?? CATEGORIES[0];
                 const Icon = cat.icon;
-                const dist = (r as Record<string, unknown>).distance as number | undefined;
+                const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
                 const href = r.link || `https://map.naver.com/p/search/${encodeURIComponent(r.title)}`;
 
                 return (
