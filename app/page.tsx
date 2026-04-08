@@ -81,11 +81,8 @@ export default function Home() {
     <div style={{ minHeight: "100vh", background: "#FAFAFA", fontFamily: "-apple-system,'Apple SD Gothic Neo','맑은 고딕',sans-serif" }}>
 
       {/* 헤더 */}
-      <header style={{ background: "#111", padding: "40px 24px 36px", textAlign: "center" }}>
-        <p style={{ color: "#FF3B30", fontSize: 12, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 10px" }}>
-          LUNCH PICK
-        </p>
-        <h1 style={{ color: "#fff", fontSize: "clamp(2.2rem, 8vw, 3.2rem)", fontWeight: 900, letterSpacing: "-2px", margin: "0 0 6px", lineHeight: 1 }}>
+      <header style={{ background: "#111", padding: "52px 24px 44px", textAlign: "center" }}>
+        <h1 style={{ color: "#fff", fontSize: "clamp(2.6rem, 10vw, 3.8rem)", fontWeight: 900, letterSpacing: "-2px", margin: "0 0 6px", lineHeight: 1 }}>
           점메추 지도
         </h1>
         <p style={{ color: "#666", fontSize: 14, margin: "0 0 28px" }}>
