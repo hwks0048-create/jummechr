@@ -49,13 +49,11 @@ export async function GET(req: NextRequest) {
   const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
   const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
 
-  // 500m 반경, 3페이지(최대 45개) 가져오기
-  const [p1, p2, p3] = await Promise.all([
-    searchKakao(lat, lng, 500, 1),
-    searchKakao(lat, lng, 500, 2),
-    searchKakao(lat, lng, 500, 3),
-  ]);
-  const allPlaces = [...p1, ...p2, ...p3];
+  // 500m 반경, 5페이지(최대 75개) — 일식·중식 등 소수 카테고리 풀 확보
+  const pages = await Promise.all(
+    [1, 2, 3, 4, 5].map((p) => searchKakao(lat, lng, 500, p))
+  );
+  const allPlaces = pages.flat();
 
   // 3대 카테고리별로 분류
   const buckets: Record<string, KakaoPlace[]> = {
