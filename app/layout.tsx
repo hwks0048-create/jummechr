@@ -36,11 +36,13 @@ export const metadata: Metadata = {
     description: DESC,
     url: SITE_URL,
     locale: "ko_KR",
+    images: [{ url: `${SITE_URL}/og.jpg`, width: 1200, height: 630, alt: "점메추 지도 — 오늘 점심 맛집 추천" }],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESC,
+    images: [`${SITE_URL}/og.jpg`],
   },
   robots: {
     index: true,
