@@ -145,14 +145,12 @@ export default function Home() {
                 const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
                 const href = r.link || `https://place.map.kakao.com/`;
 
-                const isLastOdd = i === restaurants.length - 1 && restaurants.length % 2 !== 0;
                 return (
                   <a key={i} href={href} target="_blank" rel="noopener noreferrer"
                     style={{
                       display: "flex", flexDirection: "column", background: "#fff", borderRadius: 16, padding: "16px 14px",
                       textDecoration: "none", color: "inherit", boxShadow: "0 1px 4px rgba(0,0,0,.07)", border: "1px solid #f0f0f0",
                       position: "relative", overflow: "hidden",
-                      ...(isLastOdd && { gridColumn: "span 2" }),
                     }}>
 
                     {/* 상단 컬러 바 */}

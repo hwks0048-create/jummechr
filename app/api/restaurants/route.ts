@@ -64,9 +64,9 @@ export async function GET(req: NextRequest) {
   const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
   const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
 
-  // 500m 반경, 5페이지(최대 75개)
+  // 500m 반경, 10페이지(최대 150개) — 밀집 지역에서 중식/일식 누락 방지
   const pages = await Promise.all(
-    [1, 2, 3, 4, 5].map((p) => searchKakao(lat, lng, 500, p))
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) => searchKakao(lat, lng, 500, p))
   );
   const allPlaces = pages.flat();
 
@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
   // 중식/일식은 카테고리 검색에서 누락되기 쉬우므로 키워드 검색으로 항상 보완
   // 이름 패턴으로 중국/일본 음식점 직접 판별 (카카오 카테고리가 "음식점"으로만 등록된 경우 대응)
   const SUPPLEMENT: Array<{ cat: string; query: string; namePattern: RegExp }> = [
-    { cat: "중식", query: "중국집 짜장면 짬뽕", namePattern: /짜장|짬뽕|탕수육|마라|훠궈|딤섬|양꼬치|중국|중화|홍콩|북경|사천|상해/ },
-    { cat: "일식", query: "일식당 스시 라멘 우동", namePattern: /스시|초밥|라멘|우동|돈카츠|덴뿌라|사시미|일본|이자카야|규카츠|롤|오마/ },
+    { cat: "중식", query: "중국집", namePattern: /짜장|짬뽕|탕수육|마라|훠궈|딤섬|양꼬치|중국|중화|홍콩|북경|사천|상해/ },
+    { cat: "일식", query: "일식당", namePattern: /스시|초밥|라멘|우동|돈카츠|덴뿌라|사시미|일본|이자카야|규카츠|롤|오마/ },
   ];
   await Promise.all(
     SUPPLEMENT.map(async ({ cat, query, namePattern }) => {
