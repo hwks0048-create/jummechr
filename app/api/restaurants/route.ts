@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 // 점심 직장인에게 부적합한 고가/주류 업종 필터 (카테고리 + 가게명 둘 다 체크)
 const EXCLUDED = /파인다이닝|다이닝|와인바|와인 바|루프탑바|스카이라운지|호텔 레스토랑|오마카세|뷔페|칵테일|위스키|양조장|브루어리|펍|클럽|라운지바/i;
 
-// 카카오 카테고리 → 점메추 3대 카테고리 매핑
-function classify(categoryName: string, placeName: string): "한식" | "일식·중식" | "양식·기타" | null {
+// 카카오 카테고리 → 점메추 4대 카테고리 매핑
+function classify(categoryName: string, placeName: string): "한식" | "중식" | "일식" | "양식" | null {
   if (EXCLUDED.test(categoryName) || EXCLUDED.test(placeName)) return null;
   if (/한식/.test(categoryName)) return "한식";
-  if (/일식|중식/.test(categoryName)) return "일식·중식";
-  if (/양식|분식|패스트푸드|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식·기타";
-  if (/음식점/.test(categoryName)) return "양식·기타";
+  if (/중식/.test(categoryName)) return "중식";
+  if (/일식/.test(categoryName)) return "일식";
+  if (/양식|분식|패스트푸드|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식";
+  if (/음식점/.test(categoryName)) return "양식";
   return null;
 }
 
@@ -52,17 +53,18 @@ export async function GET(req: NextRequest) {
   const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
   const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
 
-  // 500m 반경, 5페이지(최대 75개) — 일식·중식 등 소수 카테고리 풀 확보
+  // 500m 반경, 5페이지(최대 75개)
   const pages = await Promise.all(
     [1, 2, 3, 4, 5].map((p) => searchKakao(lat, lng, 500, p))
   );
   const allPlaces = pages.flat();
 
-  // 3대 카테고리별로 분류
+  // 4대 카테고리별로 분류
   const buckets: Record<string, KakaoPlace[]> = {
     "한식": [],
-    "일식·중식": [],
-    "양식·기타": [],
+    "중식": [],
+    "일식": [],
+    "양식": [],
   };
 
   for (const place of allPlaces) {
@@ -71,10 +73,9 @@ export async function GET(req: NextRequest) {
   }
 
   // 각 카테고리에서 랜덤 1개 선택
-  const categories = ["한식", "일식·중식", "양식·기타"] as const;
+  const categories = ["한식", "중식", "일식", "양식"] as const;
   const restaurants = categories
     .map((cat) => {
-      // 이전에 나온 가게 제외
       const fresh = buckets[cat].filter((p) => !excluded.has(p.place_name));
       const pool = fresh.length > 0 ? fresh : buckets[cat];
       if (pool.length === 0) return null;
@@ -93,8 +94,5 @@ export async function GET(req: NextRequest) {
     })
     .filter(Boolean);
 
-  return NextResponse.json({
-    restaurants,
-    totalNearby: allPlaces.length,
-  });
+  return NextResponse.json({ restaurants, totalNearby: allPlaces.length });
 }

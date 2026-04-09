@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, RotateCcw, Shuffle, ChevronRight, Soup, Fish, Sandwich } from "lucide-react";
+import { MapPin, RotateCcw, Shuffle, ChevronRight, Soup, Fish, Sandwich, Beef } from "lucide-react";
 import type { Restaurant } from "@/components/NaverMap";
 
 const NaverMap = dynamic(() => import("@/components/NaverMap"), { ssr: false });
@@ -11,8 +11,9 @@ type Phase = "idle" | "locating" | "fetching" | "done" | "error";
 
 const CATEGORIES = [
   { icon: Soup,     color: "#FF3B30", label: "한식" },
-  { icon: Fish,     color: "#007AFF", label: "일식·중식" },
-  { icon: Sandwich, color: "#34C759", label: "양식·기타" },
+  { icon: Beef,     color: "#FF9500", label: "중식" },
+  { icon: Fish,     color: "#007AFF", label: "일식" },
+  { icon: Sandwich, color: "#34C759", label: "양식" },
 ];
 
 export default function Home() {
@@ -43,7 +44,6 @@ export default function Home() {
         setUserLocation({ lat, lng });
         setPhase("fetching");
 
-        // 3번 넘으면 중복 방지 캐시 초기화
         clickCountRef.current += 1;
         if (clickCountRef.current > 3) {
           seenRef.current.clear();
@@ -122,7 +122,7 @@ export default function Home() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* 본문 */}
-      <main style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px 60px" }}>
+      <main style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px 60px" }}>
 
         {phase === "error" && (
           <div style={{ background: "#FFF0F0", border: "1px solid #FFD0D0", borderRadius: 12, padding: "12px 16px", color: "#CC0000", fontSize: 14, marginBottom: 16 }}>
@@ -137,58 +137,68 @@ export default function Home() {
               <span>500m 내 {totalNearby}곳 중 추천</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            {/* 식당 카드 — 2x2 그리드 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               {restaurants.map((r, i) => {
-                const cat = CATEGORIES[i] ?? CATEGORIES[0];
+                const cat = CATEGORIES.find((c) => c.label === r.category) ?? CATEGORIES[0];
                 const Icon = cat.icon;
                 const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
                 const href = r.link || `https://place.map.kakao.com/`;
 
                 return (
                   <a key={i} href={href} target="_blank" rel="noopener noreferrer"
-                    style={{ display: "flex", alignItems: "center", gap: 14, background: "#fff", borderRadius: 14, padding: "16px", textDecoration: "none", color: "inherit", boxShadow: "0 1px 4px rgba(0,0,0,.07)", border: "1px solid #f0f0f0" }}>
+                    style={{
+                      display: "flex", flexDirection: "column", background: "#fff", borderRadius: 16, padding: "16px 14px",
+                      textDecoration: "none", color: "inherit", boxShadow: "0 1px 4px rgba(0,0,0,.07)", border: "1px solid #f0f0f0",
+                      position: "relative", overflow: "hidden",
+                    }}>
 
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: cat.color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Icon size={22} color={cat.color} strokeWidth={2} />
-                    </div>
+                    {/* 상단 컬러 바 */}
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: cat.color }} />
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color }}>{r.category}</span>
-                        {dist != null && <span style={{ fontSize: 11, color: "#bbb" }}>{dist}m</span>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: cat.color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon size={18} color={cat.color} strokeWidth={2} />
                       </div>
-                      <p style={{ fontWeight: 700, fontSize: 15, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.3px" }}>
-                        {r.title}
-                      </p>
-                      {(r.roadAddress || r.address) && (
-                        <p style={{ fontSize: 12, color: "#aaa", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {r.roadAddress || r.address}
-                        </p>
-                      )}
+                      <div>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color }}>{r.category}</span>
+                        {dist != null && <span style={{ fontSize: 10, color: "#bbb", marginLeft: 4 }}>{dist}m</span>}
+                      </div>
                     </div>
 
-                    <ChevronRight size={16} color="#ddd" />
+                    <p style={{ fontWeight: 700, fontSize: 14, margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.3px" }}>
+                      {r.title}
+                    </p>
+                    {(r.roadAddress || r.address) && (
+                      <p style={{ fontSize: 11, color: "#aaa", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.roadAddress || r.address}
+                      </p>
+                    )}
+
+                    <div style={{ marginTop: "auto", paddingTop: 8, display: "flex", justifyContent: "flex-end" }}>
+                      <ChevronRight size={14} color="#ddd" />
+                    </div>
                   </a>
                 );
               })}
             </div>
 
             {userLocation && (
-              <div style={{ borderRadius: 14, overflow: "hidden", height: 240, border: "1px solid #f0f0f0" }}>
+              <div style={{ borderRadius: 14, overflow: "hidden", height: 260, border: "1px solid #f0f0f0" }}>
                 <NaverMap restaurants={restaurants} userLocation={userLocation} categoryColors={CATEGORIES.map(c => c.color)} />
               </div>
             )}
           </>
         )}
 
-        {/* SEO 콘텐츠 — 항상 렌더 (구글 크롤러가 읽을 수 있도록) */}
+        {/* SEO 콘텐츠 — 항상 렌더 */}
         <article style={{ marginTop: phase === "idle" ? 24 : 40, display: "flex", flexDirection: "column", gap: 20 }}>
           <section style={{ padding: "20px", borderRadius: 14, background: "#fff", border: "1px solid #f0f0f0" }}>
             <h2 style={{ fontWeight: 700, fontSize: 15, margin: "0 0 8px", color: "#111" }}>점메추 지도 — 점심 메뉴 추천 서비스</h2>
             <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
               <strong>점메추</strong>는 &lsquo;점심 메뉴 추천&rsquo;의 줄임말이에요.
               매일 &ldquo;오늘 점심 뭐 먹지?&rdquo; 고민하는 직장인을 위해 만들었어요.
-              버튼 한 번이면 내 위치 500m 이내 맛집 3곳을 <strong>한식·일식·양식</strong> 각각 다른 카테고리로 골라드립니다.
+              버튼 한 번이면 내 위치 500m 이내 맛집 4곳을 <strong>한식·중식·일식·양식</strong> 각각 다른 카테고리로 골라드립니다.
               마음에 안 들면 다시 뽑기 — 매번 다른 가게가 나와요.
             </p>
           </section>
@@ -199,7 +209,7 @@ export default function Home() {
               <li>매일 점심 메뉴 고르기 지치는 직장인</li>
               <li>회사 근처 새로운 맛집을 발견하고 싶은 분</li>
               <li>점심시간 1시간 안에 식사하고 돌아와야 하는 분</li>
-              <li>한식만 먹다가 다른 종류도 먹어보고 싶은 분</li>
+              <li>한식만 먹다가 중식·일식·양식도 먹어보고 싶은 분</li>
             </ul>
           </section>
 
@@ -208,7 +218,7 @@ export default function Home() {
             <ol style={{ fontSize: 13, color: "#888", lineHeight: 2, margin: 0, paddingLeft: 18 }}>
               <li><strong>뽑기 시작</strong> 버튼을 눌러주세요</li>
               <li>위치 권한을 허용하면 자동으로 내 주변을 검색해요</li>
-              <li>한식·일식·양식 3곳이 추천돼요</li>
+              <li>한식·중식·일식·양식 4곳이 추천돼요</li>
               <li>카드를 누르면 카카오맵에서 상세 정보를 볼 수 있어요</li>
               <li>마음에 안 들면 <strong>다시 뽑기</strong> — 다른 가게가 나와요</li>
             </ol>
