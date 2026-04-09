@@ -83,20 +83,29 @@ export async function GET(req: NextRequest) {
     if (cat) buckets[cat].push(place);
   }
 
-  // 빈 카테고리에 대해 키워드 검색으로 보완 (최대 1000m)
-  const FALLBACK_QUERY: Record<string, string> = { 한식: "한식", 중식: "중국집 중식", 일식: "일식 일본음식", 양식: "양식 파스타" };
-  const emptyCategories = Object.keys(buckets).filter((cat) => buckets[cat].length === 0);
-  if (emptyCategories.length > 0) {
-    await Promise.all(
-      emptyCategories.map(async (cat) => {
-        const extra = await searchKakaoKeyword(lat, lng, FALLBACK_QUERY[cat], 1000);
-        for (const place of extra) {
-          const c = classify(place.category_name, place.place_name);
-          if (c === cat) buckets[cat].push(place);
+  // 중식/일식은 카테고리 검색에서 누락되기 쉬우므로 키워드 검색으로 항상 보완
+  // 이름 패턴으로 중국/일본 음식점 직접 판별 (카카오 카테고리가 "음식점"으로만 등록된 경우 대응)
+  const SUPPLEMENT: Array<{ cat: string; query: string; namePattern: RegExp }> = [
+    { cat: "중식", query: "중국집 짜장면 짬뽕", namePattern: /짜장|짬뽕|탕수육|마라|훠궈|딤섬|양꼬치|중국|중화|홍콩|북경|사천|상해/ },
+    { cat: "일식", query: "일식당 스시 라멘 우동", namePattern: /스시|초밥|라멘|우동|돈카츠|덴뿌라|사시미|일본|이자카야|규카츠|롤|오마/ },
+  ];
+  await Promise.all(
+    SUPPLEMENT.map(async ({ cat, query, namePattern }) => {
+      if (buckets[cat].length >= 5) return; // 이미 충분한 선택지가 있으면 skip
+      const existing = new Set(buckets[cat].map((p) => p.place_name));
+      const extra = await searchKakaoKeyword(lat, lng, query, 1500);
+      for (const place of extra) {
+        if (existing.has(place.place_name)) continue;
+        if (EXCLUDED.test(place.category_name) || EXCLUDED.test(place.place_name)) continue;
+        const c = classify(place.category_name, place.place_name);
+        // classify가 정확히 맞거나, 이름 패턴으로 음식점임이 확인되면 추가
+        if (c === cat || (namePattern.test(place.place_name) && /음식점/.test(place.category_name))) {
+          buckets[cat].push(place);
+          existing.add(place.place_name);
         }
-      })
-    );
-  }
+      }
+    })
+  );
 
   // 각 카테고리에서 랜덤 1개 선택
   const categories = ["한식", "중식", "일식", "양식"] as const;
