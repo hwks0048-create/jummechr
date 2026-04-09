@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// 점심 직장인에게 부적합한 고가/주류 업종 필터
+const EXCLUDED_CATEGORIES = /파인다이닝|와인바|와인 바|루프탑바|스카이라운지|호텔 레스토랑|오마카세|뷔페|바(bar)|칵테일|위스키|양조장|브루어리|펍|클럽|라운지바/i;
+
 // 카카오 카테고리 → 점메추 3대 카테고리 매핑
 function classify(categoryName: string): "한식" | "일식·중식" | "양식·기타" | null {
+  if (EXCLUDED_CATEGORIES.test(categoryName)) return null;
   if (/한식/.test(categoryName)) return "한식";
   if (/일식|중식/.test(categoryName)) return "일식·중식";
-  if (/양식|분식|패스트푸드|뷔페|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식·기타";
-  // 기타 음식점도 양식·기타로
+  if (/양식|분식|패스트푸드|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식·기타";
   if (/음식점/.test(categoryName)) return "양식·기타";
   return null;
 }
