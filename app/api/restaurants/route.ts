@@ -64,9 +64,9 @@ export async function GET(req: NextRequest) {
   const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
   const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
 
-  // 500m 반경, 10페이지(최대 150개) — 밀집 지역에서 중식/일식 누락 방지
+  // 500m 반경, 5페이지(최대 75개)
   const pages = await Promise.all(
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) => searchKakao(lat, lng, 500, p))
+    [1, 2, 3, 4, 5].map((p) => searchKakao(lat, lng, 500, p))
   );
   const allPlaces = pages.flat();
 
