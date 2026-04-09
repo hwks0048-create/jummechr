@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
+
+const GA_ID = "G-RWMLN28D7H";
 
 const SITE_NAME = "점메추 지도";
 const TITLE = "점메추 지도 — 오늘 점심 뭐 먹지? 내 주변 맛집 3곳 추천";
@@ -108,6 +111,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <head>
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+        <Script id="ga4" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}');
+        `}</Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
