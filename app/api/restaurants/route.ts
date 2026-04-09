@@ -7,7 +7,7 @@ const EXCLUDED = /파인다이닝|다이닝|와인바|와인 바|루프탑바|�
 function classify(categoryName: string, placeName: string): "한식" | "중식" | "일식" | "양식" | null {
   if (EXCLUDED.test(categoryName) || EXCLUDED.test(placeName)) return null;
   if (/한식/.test(categoryName)) return "한식";
-  if (/중식/.test(categoryName)) return "중식";
+  if (/중식|중국/.test(categoryName)) return "중식";
   if (/일식/.test(categoryName)) return "일식";
   if (/양식|분식|패스트푸드|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식";
   if (/음식점/.test(categoryName)) return "양식";
@@ -26,16 +26,27 @@ interface KakaoPlace {
   y: string;
 }
 
+const KAKAO_HEADERS = {
+  Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
+  KA: "sdk/1.0.0 os/javascript origin/https://jummechr.vercel.app",
+};
+
 // 카카오 로컬 API — 좌표 + 반경으로 음식점 검색
 async function searchKakao(lat: number, lng: number, radius: number, page: number): Promise<KakaoPlace[]> {
   const res = await fetch(
     `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=${radius}&sort=distance&size=15&page=${page}`,
-    {
-      headers: {
-        Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
-        KA: "sdk/1.0.0 os/javascript origin/https://jummechr.vercel.app",
-      },
-    }
+    { headers: KAKAO_HEADERS }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.documents ?? []) as KakaoPlace[];
+}
+
+// 키워드 검색 — 카테고리 버킷이 비었을 때 확장 반경으로 보완
+async function searchKakaoKeyword(lat: number, lng: number, query: string, radius: number): Promise<KakaoPlace[]> {
+  const res = await fetch(
+    `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&category_group_code=FD6&x=${lng}&y=${lat}&radius=${radius}&sort=distance&size=15`,
+    { headers: KAKAO_HEADERS }
   );
   if (!res.ok) return [];
   const data = await res.json();
@@ -70,6 +81,21 @@ export async function GET(req: NextRequest) {
   for (const place of allPlaces) {
     const cat = classify(place.category_name, place.place_name);
     if (cat) buckets[cat].push(place);
+  }
+
+  // 빈 카테고리에 대해 키워드 검색으로 보완 (최대 1000m)
+  const FALLBACK_QUERY: Record<string, string> = { 한식: "한식", 중식: "중국집 중식", 일식: "일식 일본음식", 양식: "양식 파스타" };
+  const emptyCategories = Object.keys(buckets).filter((cat) => buckets[cat].length === 0);
+  if (emptyCategories.length > 0) {
+    await Promise.all(
+      emptyCategories.map(async (cat) => {
+        const extra = await searchKakaoKeyword(lat, lng, FALLBACK_QUERY[cat], 1000);
+        for (const place of extra) {
+          const c = classify(place.category_name, place.place_name);
+          if (c === cat) buckets[cat].push(place);
+        }
+      })
+    );
   }
 
   // 각 카테고리에서 랜덤 1개 선택
