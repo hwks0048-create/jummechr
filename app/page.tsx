@@ -191,19 +191,16 @@ export default function Home() {
 
             <button
               onClick={async () => {
-                const text = restaurants.map((r, i) => {
+                const lines = restaurants.map((r, i) => {
                   const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
-                  return `${i + 1}. [${r.category}] ${r.title}${dist ? ` (${dist}m)` : ""}`;
-                }).join("\n");
-                const shareData = {
-                  title: "점메추 지도 — 오늘 점심 추천",
-                  text: `오늘 점심 뽑기 결과 🍽\n\n${text}\n\n`,
-                  url: "https://jummechr.vercel.app",
-                };
+                  const link = r.link || "";
+                  return `${i + 1}. [${r.category}] ${r.title}${dist ? ` (${dist}m)` : ""}\n${link}`;
+                }).join("\n\n");
+                const fullText = `오늘 점심 뽑기 결과\n\n${lines}\n\n점메추 지도에서 뽑기\njummechr.vercel.app`;
                 if (navigator.share) {
-                  try { await navigator.share(shareData); } catch {}
+                  try { await navigator.share({ text: fullText }); } catch {}
                 } else {
-                  await navigator.clipboard.writeText(`${shareData.text}${shareData.url}`);
+                  await navigator.clipboard.writeText(fullText);
                   alert("결과가 복사됐어요! 붙여넣기로 공유하세요.");
                 }
               }}
