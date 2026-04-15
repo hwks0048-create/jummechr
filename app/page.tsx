@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, RotateCcw, Shuffle, ChevronRight, Soup, Fish, Sandwich, Beef } from "lucide-react";
+import { MapPin, RotateCcw, Shuffle, ChevronRight, Soup, Fish, Sandwich, Beef, Share2 } from "lucide-react";
 import type { Restaurant } from "@/components/NaverMap";
 
 const NaverMap = dynamic(() => import("@/components/NaverMap"), { ssr: false });
@@ -188,6 +188,34 @@ export default function Home() {
                 <NaverMap restaurants={restaurants} userLocation={userLocation} categoryColors={restaurants.map(r => CATEGORIES.find(c => c.label === r.category)?.color ?? "#999")} />
               </div>
             )}
+
+            <button
+              onClick={async () => {
+                const text = restaurants.map((r, i) => {
+                  const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
+                  return `${i + 1}. [${r.category}] ${r.title}${dist ? ` (${dist}m)` : ""}`;
+                }).join("\n");
+                const shareData = {
+                  title: "점메추 지도 — 오늘 점심 추천",
+                  text: `오늘 점심 뽑기 결과 🍽\n\n${text}\n\n`,
+                  url: "https://jummechr.vercel.app",
+                };
+                if (navigator.share) {
+                  try { await navigator.share(shareData); } catch {}
+                } else {
+                  await navigator.clipboard.writeText(`${shareData.text}${shareData.url}`);
+                  alert("결과가 복사됐어요! 붙여넣기로 공유하세요.");
+                }
+              }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                width: "100%", marginTop: 12, padding: "12px 0",
+                background: "#fff", border: "1px solid #e0e0e0", borderRadius: 12,
+                fontSize: 13, fontWeight: 600, color: "#555", cursor: "pointer",
+              }}
+            >
+              <Share2 size={14} />결과 공유하기
+            </button>
           </>
         )}
 
