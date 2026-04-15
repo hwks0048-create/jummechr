@@ -196,7 +196,7 @@ export default function Home() {
                   const link = r.link || "";
                   return `${i + 1}. [${r.category}] ${r.title}${dist ? ` (${dist}m)` : ""}\n${link}`;
                 }).join("\n\n");
-                const fullText = `오늘 점심 뽑기 결과\n\n${lines}\n\n점메추 지도에서 뽑기\njummechr.vercel.app`;
+                const fullText = `오늘 점심 뽑기 결과\n\n${lines}\n\n점메추 지도에서 뽑기\nhttps://jummechr.vercel.app`;
                 if (navigator.share) {
                   try { await navigator.share({ text: fullText }); } catch {}
                 } else {
