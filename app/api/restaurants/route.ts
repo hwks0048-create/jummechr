@@ -35,7 +35,7 @@ const KAKAO_HEADERS = {
 // 카카오 로컬 API — 좌표 + 반경으로 음식점 검색
 async function searchKakao(lat: number, lng: number, radius: number, page: number): Promise<KakaoPlace[]> {
   const res = await fetch(
-    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=${radius}&sort=distance&size=15&page=${page}`,
+    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=${radius}&sort=accuracy&size=15&page=${page}`,
     { headers: KAKAO_HEADERS }
   );
   if (!res.ok) return [];
