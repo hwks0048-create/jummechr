@@ -5,7 +5,7 @@ import "./globals.css";
 const GA_ID = "G-RWMLN28D7H";
 
 const SITE_NAME = "점메추 지도";
-const TITLE = "점메추 지도 — 오늘 점심 뭐 먹지? 내 주변 맛집 4곳 추천";
+const TITLE = "점메추 지도 — 오늘 점심메뉴 추천! 내 주변 맛집 4곳 추천";
 const DESC =
   "매일 반복되는 점심 메뉴 고민, 점메추 지도가 해결해드려요. 현재 위치 500m 이내 한식·중식·일식·양식 맛집 4곳을 즉시 추천합니다. 직장인 점심 메뉴 추천 서비스.";
 const SITE_URL = "https://jummechr.vercel.app";
