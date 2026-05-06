@@ -4,14 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 // 점심 직장인에게 부적합한 업종 (고가 + 주류 + 저녁전용)
 const EXCLUDED = /파인다이닝|다이닝|와인바|와인 바|루프탑바|스카이라운지|호텔 레스토랑|오마카세|뷔페|칵테일|위스키|양조장|브루어리|펍|클럽|라운지바|술집|호프|포장마차|이자카야|주점|주막|생맥주|맥주집|하이볼|소주바|요리주점|치킨호프|노래방|가라오케|짐|양꼬치|참치/i;
 
+// 점심 메뉴로 부적합 — 디저트/카페/간식 (점심에는 안 먹음)
+const NON_LUNCH = /카페|디저트|아이스크림|베이커리|제과|도넛|빙수|와플|쥬스|스무디|티룸|찻집/i;
+
 // 카카오 카테고리 → 점메추 4대 카테고리 매핑
 function classify(categoryName: string, placeName: string): "한식" | "중식" | "일식" | "양식" | null {
   if (EXCLUDED.test(categoryName) || EXCLUDED.test(placeName)) return null;
-  if (/한식/.test(categoryName)) return "한식";
+  if (NON_LUNCH.test(categoryName)) return null;
+  // 분식은 한식 슬롯으로 (김밥/떡볶이/우동은 한식 계열)
+  if (/한식|분식/.test(categoryName)) return "한식";
   if (/중식|중국/.test(categoryName)) return "중식";
   if (/일식/.test(categoryName)) return "일식";
-  if (/양식|분식|패스트푸드|카페|간식|인도|태국|베트남|멕시|이탈리|브런치/.test(categoryName)) return "양식";
-  if (/음식점/.test(categoryName)) return "양식";
+  // 양식 = 실제 양식 + 동남아/인도/패스트푸드 (한·중·일 외 외국 음식)
+  if (/양식|이탈리|프렌치|스페인|멕시|인도|태국|베트남|아시아|브런치|샐러드|스테이크|피자|파스타|버거|패스트푸드/.test(categoryName)) return "양식";
   return null;
 }
 

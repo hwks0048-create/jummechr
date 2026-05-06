@@ -187,7 +187,7 @@ export default function Home() {
               {restaurants.map((r, i) => {
                 const cat = CATEGORIES.find((c) => c.label === r.category) ?? CATEGORIES[0];
                 const Icon = cat.icon;
-                const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
+                const dist = r.distance;
                 const href = r.link || `https://place.map.kakao.com/`;
 
                 return (
@@ -259,7 +259,7 @@ export default function Home() {
               className="apple-card"
               onClick={async () => {
                 const lines = restaurants.map((r, i) => {
-                  const dist = (r as unknown as Record<string, unknown>).distance as number | undefined;
+                  const dist = r.distance;
                   const link = r.link || "";
                   return `${i + 1}. [${r.category}] ${r.title}${dist ? ` (${dist}m)` : ""}\n${link}`;
                 }).join("\n\n");

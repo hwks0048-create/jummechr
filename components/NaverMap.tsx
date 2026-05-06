@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface Restaurant {
   title: string;
@@ -11,6 +11,17 @@ export interface Restaurant {
   link: string;
   lat: number;
   lng: number;
+  distance?: number;
+}
+
+// HTML 인젝션 방어 — 마커/InfoWindow의 content 문자열에 사용자 데이터 삽입 시 사용
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 interface Props {
@@ -29,6 +40,7 @@ const DEFAULT_COLORS = ["#FF6B35", "#2ECC71", "#8B5CF6"];
 
 export default function NaverMap({ restaurants, onMarkerClick, userLocation, categoryColors = DEFAULT_COLORS }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const S = useRef({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,18 +62,25 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
     let alive = true;
 
     function loadScript(): Promise<void> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         if (window.naver?.maps) { resolve(); return; }
+        const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+        if (!clientId) {
+          reject(new Error("네이버 지도 클라이언트 ID가 설정되지 않았어요."));
+          return;
+        }
         const existing = document.getElementById("naver-map-script");
         if (existing) {
           existing.addEventListener("load", () => resolve(), { once: true });
+          existing.addEventListener("error", () => reject(new Error("네이버 지도 스크립트 로드 실패")), { once: true });
           return;
         }
         const script = document.createElement("script");
         script.id = "naver-map-script";
-        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}`;
+        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}`;
         script.async = true;
         script.addEventListener("load", () => resolve(), { once: true });
+        script.addEventListener("error", () => reject(new Error("네이버 지도 스크립트 로드 실패")), { once: true });
         document.head.appendChild(script);
       });
     }
@@ -78,6 +97,10 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
         logoControlOptions: { position: window.naver.maps.Position.BOTTOM_LEFT },
       });
       renderAll(restaurantsRef.current);
+    }).catch((err: Error) => {
+      if (!alive) return;
+      console.error("[NaverMap]", err);
+      setLoadError(err.message);
     });
 
     return () => {
@@ -127,12 +150,16 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
     list.forEach((r, i) => {
       if (!r.lat || !r.lng) return;
       const color = categoryColors[i] ?? DEFAULT_COLORS[0];
+      const safeTitle = esc(r.title);
+      const safeCategory = esc(r.category);
+      const safeAddress = esc(r.roadAddress || r.address);
+      const safeLink = esc(r.link || "https://place.map.kakao.com/");
 
       const marker = new naver.maps.Marker({
         position: new naver.maps.LatLng(r.lat, r.lng),
         map,
         icon: {
-          content: `<div style="background:${color};color:white;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap;font-family:sans-serif;">${i + 1}. ${r.title}</div>`,
+          content: `<div style="background:${color};color:white;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.25);white-space:nowrap;font-family:sans-serif;">${i + 1}. ${safeTitle}</div>`,
           anchor: new naver.maps.Point(0, 28),
         },
       });
@@ -140,10 +167,10 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
       const iw = new naver.maps.InfoWindow({
         content: `
           <div style="padding:12px 14px;min-width:200px;font-family:-apple-system,sans-serif;">
-            <strong style="font-size:13px;color:#111;">${r.title}</strong>
-            ${r.category ? `<p style="margin:4px 0 0;font-size:11px;color:${color};font-weight:600;">${r.category}</p>` : ""}
-            <p style="margin:6px 0 0;font-size:11px;color:#666;">${r.roadAddress || r.address}</p>
-            <a href="${r.link || `https://place.map.kakao.com/`}" target="_blank" style="display:inline-block;margin-top:8px;font-size:11px;color:#FFCD00;background:#111;padding:3px 8px;border-radius:4px;font-weight:600;text-decoration:none;">카카오맵 보기 →</a>
+            <strong style="font-size:13px;color:#111;">${safeTitle}</strong>
+            ${safeCategory ? `<p style="margin:4px 0 0;font-size:11px;color:${color};font-weight:600;">${safeCategory}</p>` : ""}
+            <p style="margin:6px 0 0;font-size:11px;color:#666;">${safeAddress}</p>
+            <a href="${safeLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;font-size:11px;color:#FFCD00;background:#111;padding:3px 8px;border-radius:4px;font-weight:600;text-decoration:none;">카카오맵 보기 →</a>
           </div>`,
         maxWidth: 280,
         borderRadius: "12px",
@@ -174,5 +201,15 @@ export default function NaverMap({ restaurants, onMarkerClick, userLocation, cat
     }
   }
 
+  if (loadError) {
+    return (
+      <div style={{
+        width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+        background: "#F5F5F7", color: "#86868B", fontSize: 13, padding: 20, textAlign: "center",
+      }}>
+        지도를 불러올 수 없어요<br />카드를 눌러 카카오맵에서 확인해주세요
+      </div>
+    );
+  }
   return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }
