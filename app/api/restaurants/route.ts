@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MENU_BY_SLUG, type Menu } from "@/lib/menus";
 
 // 점심 직장인에게 부적합한 고가/주류 업종 필터 (카테고리 + 가게명 둘 다 체크)
 // 점심 직장인에게 부적합한 업종 (고가 + 주류 + 저녁전용)
@@ -59,6 +60,46 @@ async function searchKakaoKeyword(lat: number, lng: number, query: string, radiu
   return (data.documents ?? []) as KakaoPlace[];
 }
 
+function toRestaurant(p: KakaoPlace, category: string) {
+  return {
+    title: p.place_name,
+    category,
+    address: p.address_name,
+    roadAddress: p.road_address_name,
+    description: p.category_name.split(" > ").slice(1).join(" > "),
+    link: p.place_url,
+    lat: parseFloat(p.y),
+    lng: parseFloat(p.x),
+    distance: parseInt(p.distance),
+  };
+}
+
+// 메뉴 룰렛 결과 → "내 주변 이 메뉴 파는 집" (키워드 검색, 가까운 순 최대 4곳)
+async function searchByMenu(lat: number, lng: number, menu: Menu, excluded: Set<string>) {
+  let places = await searchKakaoKeyword(lat, lng, menu.query, 500);
+  let radius = 500;
+  if (places.length < 3) {
+    places = await searchKakaoKeyword(lat, lng, menu.query, 1000);
+    radius = 1000;
+  }
+  const seen = new Set<string>();
+  const valid = places.filter((p) => {
+    if (seen.has(p.place_name)) return false;
+    seen.add(p.place_name);
+    if (EXCLUDED.test(p.category_name) || EXCLUDED.test(p.place_name)) return false;
+    if (NON_LUNCH.test(p.category_name)) return false;
+    return true;
+  });
+  // 가게명/카테고리에 메뉴명이 직접 들어간 곳을 앞으로 (카카오 키워드 검색은 연관 가게도 섞여 나옴), 그룹 안에서는 가까운 순 유지
+  const term = menu.query.replace(/\s+/g, "");
+  const direct = (p: KakaoPlace) => (p.place_name + p.category_name).replace(/\s+/g, "").includes(term);
+  const ranked = [...valid.filter(direct), ...valid.filter((p) => !direct(p))];
+  const fresh = ranked.filter((p) => !excluded.has(p.place_name));
+  const pool = fresh.length >= 2 ? fresh : ranked;
+  const restaurants = pool.slice(0, 4).map((p) => toRestaurant(p, menu.category));
+  return { restaurants, totalNearby: valid.length, radius, menu: menu.name };
+}
+
 export async function GET(req: NextRequest) {
   const lat = parseFloat(req.nextUrl.searchParams.get("lat") ?? "");
   const lng = parseFloat(req.nextUrl.searchParams.get("lng") ?? "");
@@ -69,6 +110,13 @@ export async function GET(req: NextRequest) {
 
   const excludeRaw = req.nextUrl.searchParams.get("exclude") ?? "";
   const excluded = new Set(excludeRaw.split(",").map((s) => s.trim()).filter(Boolean));
+
+  const menuSlug = req.nextUrl.searchParams.get("menu");
+  if (menuSlug) {
+    const menu = MENU_BY_SLUG[menuSlug];
+    if (!menu) return NextResponse.json({ error: "없는 메뉴예요." }, { status: 400 });
+    return NextResponse.json(await searchByMenu(lat, lng, menu, excluded));
+  }
 
   // 500m 반경, 5페이지(최대 75개)
   const pages = await Promise.all(
@@ -121,17 +169,7 @@ export async function GET(req: NextRequest) {
       const pool = fresh.length > 0 ? fresh : buckets[cat];
       if (pool.length === 0) return null;
       const pick = pool[Math.floor(Math.random() * pool.length)];
-      return {
-        title: pick.place_name,
-        category: cat,
-        address: pick.address_name,
-        roadAddress: pick.road_address_name,
-        description: pick.category_name.split(" > ").slice(1).join(" > "),
-        link: pick.place_url,
-        lat: parseFloat(pick.y),
-        lng: parseFloat(pick.x),
-        distance: parseInt(pick.distance),
-      };
+      return toRestaurant(pick, cat);
     })
     .filter(Boolean);
 

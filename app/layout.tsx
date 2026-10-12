@@ -5,9 +5,9 @@ import "./globals.css";
 const GA_ID = "G-RWMLN28D7H";
 
 const SITE_NAME = "점메추 지도";
-const TITLE = "점메추 지도 — 오늘 점심메뉴 추천! 내 주변 맛집 4곳 추천";
+const TITLE = "점메추 지도 — 오늘 점심메뉴 추천 룰렛 + 내 주변 맛집 찾기";
 const DESC =
-  "매일 반복되는 점심 메뉴 고민, 점메추 지도가 해결해드려요. 현재 위치 500m 이내 한식·중식·일식·양식 맛집 4곳을 즉시 추천합니다. 직장인 점심 메뉴 추천 서비스.";
+  "오늘 점심 뭐 먹지? 점메추 지도가 32가지 점심 메뉴 중 하나를 룰렛으로 뽑아주고, 내 위치 500m 안에서 그 메뉴 파는 집까지 바로 찾아드려요. 위치 권한 없이도 메뉴 뽑기 가능. 직장인 점심 메뉴 추천 서비스.";
 const SITE_URL = "https://jummechr.vercel.app";
 
 export const metadata: Metadata = {
@@ -29,6 +29,8 @@ export const metadata: Metadata = {
     "점심 맛집",
     "내 주변 맛집",
     "점심 랜덤 추천",
+    "점심 메뉴 룰렛",
+    "점메추 룰렛",
     "점메추 지도",
   ],
   alternates: { canonical: "/" },
@@ -86,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         name: "점메추가 뭔가요?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "점메추는 '점심 메뉴 추천'의 줄임말입니다. 점메추 지도는 현재 위치 기반으로 500m 이내 맛집 4곳을 한식·중식·일식·양식으로 나눠 추천하는 무료 서비스입니다.",
+          text: "점메추는 '점심 메뉴 추천'의 줄임말입니다. 점메추 지도는 32가지 점심 메뉴 중 하나를 룰렛으로 뽑아주고, 현재 위치 500m 이내에서 그 메뉴를 파는 집을 찾아주는 무료 서비스입니다.",
         },
       },
       {
@@ -94,7 +96,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         name: "점메추 지도는 어떻게 사용하나요?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "점메추 지도 사이트에 접속해서 '뽑기 시작' 버튼을 누르면 됩니다. 위치 권한을 허용하면 내 주변 500m 이내 식당 4곳이 한식·중식·일식·양식으로 바로 추천됩니다. 마음에 안 들면 '다시 뽑기'를 누르면 다른 가게가 나옵니다.",
+          text: "점메추 지도 사이트에서 '메뉴 뽑기'를 누르면 위치 권한 없이 점심 메뉴 하나가 뽑힙니다. 마음에 들면 '내 주변 파는 집 찾기'를 누르고 위치 권한을 허용하면 500m 이내 가게가 가까운 순으로 나옵니다. 메뉴 고르기가 귀찮으면 한식·중식·일식·양식 가게 4곳을 한 번에 뽑을 수도 있습니다.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "위치 권한 없이도 쓸 수 있나요?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "네. 메뉴 뽑기(룰렛)와 메뉴별·상황별 추천 페이지는 위치 권한 없이 사용할 수 있습니다. 위치 권한은 '내 주변 파는 집 찾기'를 누를 때만 요청하고, 위치 정보는 저장하지 않습니다.",
         },
       },
       {
